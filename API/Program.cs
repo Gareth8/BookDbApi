@@ -1,4 +1,7 @@
 
+using BookDbApi.Pipeline;
+using BookDbApi.Shared;
+
 namespace BookDbApi
 {
     public class Program
@@ -8,6 +11,14 @@ namespace BookDbApi
             var builder = WebApplication.CreateBuilder(args);
 
             // Add services to the container.
+            builder.Services.AddScoped<SharedError>();
+            builder.Services.AddTransient<BookDbApi.Pipeline.ErrorHandlingMiddleware>();
+
+            builder.Services.AddControllers(options =>
+            {
+                options.AllowEmptyInputInBodyModelBinding = true;
+                options.Filters.Add<ActionErrorHandlingFilter>();
+            });
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -24,9 +35,8 @@ namespace BookDbApi
             }
 
             app.UseHttpsRedirection();
-
+            app.UseRouting();
             app.UseAuthorization();
-
 
             app.MapControllers();
 
