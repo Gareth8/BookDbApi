@@ -16,5 +16,3 @@ A .env file is required, placed inside the API folder, to set the below environm
 - **DATABASE_USERNAME={username}**  - The username to connect with. 
 - **DATABASE_PASSWORD={password}** - The password to connect with.
 - **DATABASE_TARGET={database}** - The PostgreSQL database to connect to.
-
----
