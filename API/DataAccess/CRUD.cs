@@ -5,9 +5,15 @@ namespace BookDbApi.DataAccess
 {
     public class CRUD
     {
-        const string m_connectionString = "Host=localhost;Username=postgres;Password=password;Database=postgres";
+        #region Variables
+        static readonly string? dBHost = Environment.GetEnvironmentVariable("DATABASE_HOST");
+        static readonly string? dBUsername = Environment.GetEnvironmentVariable("DATABASE_USERNAME");
+        static readonly string? dBPassword = Environment.GetEnvironmentVariable("DATABASE_PASSWORD");
+        static readonly string? dBTarget = Environment.GetEnvironmentVariable("DATABASE_TARGET");
+        
+        readonly string m_connectionString = $"Host={dBHost};Username={dBUsername};Password={dBPassword};Database={dBTarget}";
         private NpgsqlConnection m_connection { get; set; }
-
+        #endregion
         public CRUD()
         {
             m_connection = new NpgsqlConnection(m_connectionString);

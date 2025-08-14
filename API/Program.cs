@@ -1,4 +1,5 @@
 
+using BookDbApi.DataAccess;
 using BookDbApi.Pipeline;
 using BookDbApi.Shared;
 
@@ -39,6 +40,11 @@ namespace BookDbApi
             app.UseAuthorization();
 
             app.MapControllers();
+            
+            
+            string root = Directory.GetCurrentDirectory();
+            string dotEnvPath = Path.Combine(root, ".env");
+            DotEnv.Load(dotEnvPath);
 
             app.Run();
         }
