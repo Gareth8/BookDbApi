@@ -16,7 +16,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: /home/runner/work/BooksDbApi/BooksDbApi/API
+        working-directory: /home/runner/work/BookDbApi/BookDbApi/API
 
     steps:
     - uses: actions/checkout@v4
