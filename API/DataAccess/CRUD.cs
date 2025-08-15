@@ -24,7 +24,7 @@ namespace BookDbApi.DataAccess
         {
             try
             {
-                if (!await BookExists((p_book.GetTitle())))
+                if (!await BookExistsTitle((p_book.GetTitle())))
                 {
                     await using (var insertBook = new NpgsqlCommand("INSERT INTO bookdb.books (title, isbn) VALUES (@title, @isbn);", m_connection))
                     {
@@ -78,11 +78,62 @@ namespace BookDbApi.DataAccess
             }
             return true;
         }
-        public async Task<bool> BookExists(string p_bookTitle)
+
+        public async Task<Book> GetBookIsbn(string p_isbn)
+        {
+            if (!await BookExistsIsbn(p_isbn))
+            {
+                throw new Exception("Book does not exist");
+            }
+
+            string title = "";
+            string author = "";
+            string publisher = "";
+            
+            await using (var book = new NpgsqlCommand(@"
+                SELECT b.title, a.author_name, p.publisher_name
+                FROM bookdb.books b
+                JOIN bookdb.publishers p ON b.publisher_ID = p.publisher_ID
+                JOIN bookdb.author_book_link abl ON b.book_ID = abl.book_ID
+                JOIN bookdb.authors a ON abl.author_ID = a.author_ID
+                WHERE b.ISBN = @isbn;", m_connection))
+            {
+                book.Parameters.AddWithValue("isbn", p_isbn);
+
+                await using var reader = await book.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    title = reader.GetString(0);
+                    author = reader.GetString(1);
+                    publisher = reader.GetString(2);
+                }
+                
+                return new Book(title, author, publisher, p_isbn);
+            }
+        }
+
+        #region ExistsCheck
+
+        public async Task<bool> BookExistsTitle(string p_bookTitle)
         {
             await using (var getBook = new NpgsqlCommand("SELECT COUNT(1) FROM bookdb.books WHERE title = @title;", m_connection))
             {
                 getBook.Parameters.AddWithValue("title", p_bookTitle);
+                var count = (long)await getBook.ExecuteScalarAsync();
+
+                if (count > 0)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        public async Task<bool> BookExistsIsbn(string p_bookIsbn)
+        {
+            await using (var getBook = new NpgsqlCommand("SELECT COUNT(1) FROM bookdb.books WHERE isbn = @isbn;", m_connection))
+            {
+                getBook.Parameters.AddWithValue("isbn", p_bookIsbn);
                 var count = (long)await getBook.ExecuteScalarAsync();
 
                 if (count > 0)
@@ -120,5 +171,7 @@ namespace BookDbApi.DataAccess
             }
             return false;
         }
+
+        #endregion
     }
 }

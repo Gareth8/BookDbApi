@@ -38,6 +38,11 @@
             return m_isbn;
         }
 
+        
+        /*
+         * Genere needs to be added.
+         * The main issue comes from one book having multiple genres, so need to figure out a good way to deal with that.
+         */
         public string GetGenre()
         {
             return "";

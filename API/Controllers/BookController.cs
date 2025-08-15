@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using BookDbApi.DataAccess;
 
 namespace BookDbApi.Controllers
@@ -18,7 +17,7 @@ namespace BookDbApi.Controllers
         [Route("{title}")]
         public async Task<IActionResult> BookExists(string title)
         {
-            bool result = await crud.BookExists(title);
+            bool result = await crud.BookExistsTitle(title);
 
             if (result)
             {
@@ -31,7 +30,7 @@ namespace BookDbApi.Controllers
         }
 
         [HttpPost]
-        [Route("{ISBN}")]
+        [ActionName("isbn/{ISBN}")]
         public async Task<IActionResult> AddBook(string ISBN)
         {
             Book book = await OpenLibraryAccess.GetBook(ISBN);
@@ -42,8 +41,27 @@ namespace BookDbApi.Controllers
             {
                 return Ok($"Book with ISBN '{ISBN}' created.");
             }
-            
+
             return NotFound($"Book with ISBN '{ISBN}' not found.");
+        }
+
+        [HttpGet]
+        [ActionName("isbn")]
+        public async Task<IActionResult> GetBookByIsbn([FromQuery] string? ISBN)
+        {
+            if (string.IsNullOrEmpty(ISBN))
+            {
+                return Problem(
+                    title: "No ISBN provided.",
+                    detail: "An empty ISBN was provided. Please provide a valid ISBN 10 or 13 number.",
+                    statusCode: StatusCodes.Status422UnprocessableEntity,
+                    instance: HttpContext.Request.Path
+                );
+            }
+
+            Book book = await crud.GetBookIsbn(ISBN);
+
+            return Ok(book.ToString());
         }
     }
 }
