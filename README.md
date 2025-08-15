@@ -7,7 +7,7 @@ This API interacts with a database for storing books. It uses the [Open Library'
 
 The API can be queried with the following URLs:
 -  `/api/Book/BookExists/{title}` - This URL takes in a string, and if a book exists in the database with a matching title, the API will respond with a code of 200.
-- `/api/Book/AddBook/{ISBN}` - This URL takes in an ISBN number as a string, and attempts to add the associated book to the database. The API accepts a valid ISBN 10 or 13 number, and if the book is found, it will be added to the database and will respond with a code of 200. If the book is not found, or an invalid string is passed, the API will instead respond with a code of 404.
+- `/api/Book/AddBook/isbn/{ISBN}` - This URL takes in an ISBN number as a string, and attempts to add the associated book to the database. The API accepts a valid ISBN 10 or 13 number, and if the book is found, it will be added to the database and will respond with a code of 200. If the book is not found, or an invalid string is passed, the API will instead respond with a code of 404.
 
 ---
 
