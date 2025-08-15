@@ -59,9 +59,16 @@ namespace BookDbApi.Controllers
                 );
             }
 
-            Book book = await crud.GetBookIsbn(ISBN);
+            try
+            {
+                Book book = await crud.GetBookIsbn(ISBN);
 
-            return Ok(book.ToString());
+                return Ok(book.ToString());
+            }
+            catch (Exception e)
+            {
+                return BadRequest(e.Message);
+            }
         }
     }
 }
