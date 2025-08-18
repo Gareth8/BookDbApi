@@ -24,15 +24,17 @@ namespace BookDbApi.DataAccess
         {
             try
             {
-                if (!await BookExistsTitle((p_book.GetTitle())))
+                if (await BookExistsTitle((p_book.GetTitle())) || await BookExistsIsbn(p_book.GetIsbn()))
                 {
-                    await using (var insertBook = new NpgsqlCommand("INSERT INTO bookdb.books (title, isbn) VALUES (@title, @isbn);", m_connection))
-                    {
-                        insertBook.Parameters.AddWithValue("title", p_book.GetTitle());
-                        insertBook.Parameters.AddWithValue("isbn", p_book.GetIsbn());
+                    throw new Exception($"Book {p_book.GetTitle()} already exists");
+                }
+                
+                await using (var insertBook = new NpgsqlCommand("INSERT INTO bookdb.books (title, isbn) VALUES (@title, @isbn);", m_connection))
+                {
+                    insertBook.Parameters.AddWithValue("title", p_book.GetTitle());
+                    insertBook.Parameters.AddWithValue("isbn", p_book.GetIsbn());
 
-                        await insertBook.ExecuteNonQueryAsync();
-                    }
+                    await insertBook.ExecuteNonQueryAsync();
                 }
 
                 if (!await AuthorExists(p_book.GetAuthor()))
@@ -70,6 +72,22 @@ namespace BookDbApi.DataAccess
                     insertAuthorBookLink.Parameters.AddWithValue("author", p_book.GetAuthor());
                     await insertAuthorBookLink.ExecuteNonQueryAsync();
                 }
+
+                if (p_book.GetGenres().Any())
+                {
+                    List<string> l_genres = p_book.GetGenres();
+                    foreach (string bookGenre in l_genres)
+                    {
+                        await using (var insertAuthorBookLink = new NpgsqlCommand("INSERT INTO bookdb.genre_book_link " +
+                                         "VALUES ((SELECT book_id FROM bookdb.books WHERE title = @title LIMIT 1)," +
+                                         "(SELECT genre_id FROM bookdb.genres WHERE genre = @genre));",  m_connection))
+                        {
+                            insertAuthorBookLink.Parameters.AddWithValue("title", p_book.GetTitle());
+                            insertAuthorBookLink.Parameters.AddWithValue("genre", bookGenre);
+                            await insertAuthorBookLink.ExecuteNonQueryAsync();
+                        }
+                    }
+                }
             }
             catch (Exception e)
             {
@@ -89,28 +107,50 @@ namespace BookDbApi.DataAccess
             string title = "";
             string author = "";
             string publisher = "";
+            List<string> genres = new List<string>();
             
             await using (var book = new NpgsqlCommand(@"
-                SELECT b.title, a.author_name, p.publisher_name
-                FROM bookdb.books b
-                JOIN bookdb.publishers p ON b.publisher_ID = p.publisher_ID
-                JOIN bookdb.author_book_link abl ON b.book_ID = abl.book_ID
-                JOIN bookdb.authors a ON abl.author_ID = a.author_ID
-                WHERE b.ISBN = @isbn;", m_connection))
+                SELECT book.title, author.author_name, publisher.publisher_name
+                FROM bookdb.books book
+                JOIN bookdb.publishers publisher ON book.publisher_ID = publisher.publisher_ID
+                JOIN bookdb.author_book_link authorLink ON book.book_ID = authorLink.book_ID
+                JOIN bookdb.authors author ON authorLink.author_ID = author.author_ID
+                WHERE book.ISBN = @isbn;", m_connection))
             {
                 book.Parameters.AddWithValue("isbn", p_isbn);
 
                 await using var reader = await book.ExecuteReaderAsync();
 
-                while (await reader.ReadAsync())
+                if (await reader.ReadAsync())
                 {
                     title = reader.GetString(0);
                     author = reader.GetString(1);
                     publisher = reader.GetString(2);
                 }
-                
-                return new Book(title, author, publisher, p_isbn);
             }
+            
+            await using (var genreCmd = new NpgsqlCommand(@"
+                SELECT genreID.genre
+                FROM bookdb.genres genreID
+                JOIN bookdb.genre_book_link link ON genreID.genre_ID = link.genre_ID
+                JOIN bookdb.books bookID ON link.book_ID = bookID.book_ID
+                WHERE bookID.ISBN = @isbn;", m_connection))
+            {
+                genreCmd.Parameters.AddWithValue("isbn", p_isbn);
+
+                await using var reader = await genreCmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    genres.Add(reader.GetString(0));
+                }
+            }
+
+            if (genres.Any())
+            {
+                return new Book(title, author, publisher, p_isbn, genres);
+            }
+            
+            return new Book(title, author, publisher, p_isbn);
         }
 
         #region ExistsCheck

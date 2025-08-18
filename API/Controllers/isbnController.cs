@@ -33,8 +33,18 @@ namespace BookDbApi.Controllers
         }
         
         [HttpPost]
-        public async Task<IActionResult> AddBook([FromRoute] string ISBN)
+        public async Task<IActionResult> AddBook([FromQuery] string? ISBN)
         {
+            if (string.IsNullOrEmpty(ISBN))
+            {
+                return Problem(
+                    title: "No ISBN provided.",
+                    detail: "An empty ISBN was provided. Please provide a valid ISBN 10 or 13 number.",
+                    statusCode: StatusCodes.Status422UnprocessableEntity,
+                    instance: HttpContext.Request.Path
+                );
+            }
+            
             Book book = await OpenLibraryAccess.GetBook(ISBN);
 
             bool addSuccess = await crud.Create(book);

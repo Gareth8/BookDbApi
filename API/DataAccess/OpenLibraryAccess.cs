@@ -1,9 +1,11 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using BookDbApi.Utilities;
+using Newtonsoft.Json.Linq;
 
 namespace BookDbApi.DataAccess;
 
 public static class OpenLibraryAccess
 {
+    static csvHandler csvParser = new csvHandler();
     const string m_baseAddress = "https://openlibrary.org/";
     
     private static readonly HttpClient m_httpClient = new HttpClient()
@@ -17,6 +19,7 @@ public static class OpenLibraryAccess
         string l_title = "";
         string l_publisher = "";
         string l_author = "";
+        List<string>? l_genres = new List<string>();
 
         HttpResponseMessage isbnResponse = await m_httpClient.GetAsync(m_baseAddress + l_request);
 
@@ -34,7 +37,7 @@ public static class OpenLibraryAccess
             l_title = (string)JObject.Parse(isbnJsonResponse)["title"];
             l_publisher = (string)JObject.Parse(isbnJsonResponse)["publishers"][0];
 
-            string l_titlePath = $"search.json?q={l_title}&limit=1";
+            string l_titlePath = $"search.json?q={l_title}&fields=author_name,subject&limit=1";
 
             HttpResponseMessage titleResponse = await m_httpClient.GetAsync(m_baseAddress + l_titlePath);
             titleResponse.EnsureSuccessStatusCode();
@@ -47,6 +50,7 @@ public static class OpenLibraryAccess
             
             var titleJObject = JObject.Parse(titleJsonResponse);
             var titleToken = titleJObject.SelectToken("docs[0].author_name[0]");
+            l_genres = csvHandler.GetSubjects(titleJObject["docs"]?[0]?["subject"]);
 
             if (titleToken == null)
             {
@@ -63,6 +67,11 @@ public static class OpenLibraryAccess
             throw;
         }
 
-        return new Book(l_title, l_author, l_publisher, p_ISBN);
+        if (!l_genres.Any())
+        {
+            return new Book(l_title, l_author, l_publisher, p_ISBN);
+        }
+        
+        return new Book(l_title, l_author, l_publisher, p_ISBN,  l_genres);
     }
 }
