@@ -79,8 +79,8 @@ namespace BookDbApi.DataAccess
                     foreach (string bookGenre in l_genres)
                     {
                         await using (var insertAuthorBookLink = new NpgsqlCommand("INSERT INTO bookdb.genre_book_link " +
-                                         "VALUES ((SELECT book_id FROM bookdb.books WHERE title = @title LIMIT 1)," +
-                                         "(SELECT genre_id FROM bookdb.genres WHERE genre = @genre));",  m_connection))
+                             "VALUES ((SELECT book_id FROM bookdb.books WHERE title = @title LIMIT 1)," +
+                             "(SELECT genre_id FROM bookdb.genres WHERE genre = @genre));",  m_connection))
                         {
                             insertAuthorBookLink.Parameters.AddWithValue("title", p_book.GetTitle());
                             insertAuthorBookLink.Parameters.AddWithValue("genre", bookGenre);

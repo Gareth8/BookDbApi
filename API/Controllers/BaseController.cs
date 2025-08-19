@@ -10,7 +10,7 @@ namespace BookDbApi.Controllers
     {
         protected SharedError Error { get; set; }
 
-        public BaseController()
+        protected BaseController()
         {
             Error = new SharedError();
         }
